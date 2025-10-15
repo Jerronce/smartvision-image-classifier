@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartVision Image Classifier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 700px;
+            padding: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f5f7ff;
+        }
+        .upload-area.active {
+            border-color: #667eea;
+            background: #f5f7ff;
+        }
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+        }
+        .upload-text strong {
+            color: #667eea;
+        }
+        #fileInput {
+            display: none;
+        }
+        .image-preview {
+            display: none;
+            margin-bottom: 30px;
+        }
+        .image-preview.show {
+            display: block;
+        }
+        .preview-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .classify-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .classify-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        .classify-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: #f5f7ff;
+            border-radius: 15px;
+        }
+        .results.show {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .results h3 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .prediction {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .prediction-emoji {
+            font-size: 32px;
+            margin-right: 15px;
+        }
+        .prediction-details {
+            flex: 1;
+        }
+        .prediction-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .confidence-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .confidence-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        .prediction-confidence {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .reset-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: opacity 0.2s;
+        }
+        .reset-btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 SmartVision</h1>
+            <p>AI-Powered Image Classification</p>
+        </div>
+
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">
+                <strong>Click to upload</strong> or drag and drop<br>
+                PNG, JPG, GIF up to 10MB
+            </div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+
+        <div class="image-preview" id="imagePreview">
+            <img id="previewImage" class="preview-image" alt="Preview">
+            <button class="classify-btn" onclick="classifyImage()">Classify Image</button>
+        </div>
+
+        <div class="results" id="results">
+            <h3>Classification Results</h3>
+            <div id="predictions"></div>
+            <button class="reset-btn" onclick="resetClassifier()">Analyze Another Image</button>
+        </div>
+    </div>
+
+    <script>
+        let currentImage = null;
+
+        // Drag and drop handlers
+        const uploadArea = document.getElementById('uploadArea');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.add('active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.remove('active');
+            }, false);
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }, false);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentImage = e.target.result;
+                document.getElementById('previewImage').src = currentImage;
+                document.getElementById('uploadArea').style.display = 'none';
+                document.getElementById('imagePreview').classList.add('show');
+                document.getElementById('results').classList.remove('show');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Simulated image classification
+        function classifyImage() {
+            // In a real implementation, this would send the image to a backend API
+            // or use a TensorFlow.js model for client-side classification
+            
+            const categories = [
+                { label: 'Cat', emoji: '🐱', confidence: 0.92 },
+                { label: 'Dog', emoji: '🐶', confidence: 0.15 },
+                { label: 'Bird', emoji: '🐦', confidence: 0.08 },
+                { label: 'Car', emoji: '🚗', confidence: 0.05 },
+                { label: 'Person', emoji: '🧑', confidence: 0.03 }
+            ];
+
+            // Randomize predictions for demo
+            const predictions = categories.map(cat => ({
+                ...cat,
+                confidence: Math.random()
+            })).sort((a, b) => b.confidence - a.confidence).slice(0, 5);
+
+            displayResults(predictions);
+        }
+
+        function displayResults(predictions) {
+            const predictionsDiv = document.getElementById('predictions');
+            
+            predictionsDiv.innerHTML = predictions.map(pred => `
+                <div class="prediction">
+                    <div class="prediction-emoji">${pred.emoji}</div>
+                    <div class="prediction-details">
+                        <div class="prediction-label">${pred.label}</div>
+                        <div class="confidence-bar-container">
+                            <div class="confidence-bar" style="width: ${pred.confidence * 100}%"></div>
+                        </div>
+                        <div class="prediction-confidence">
+                            ${(pred.confidence * 100).toFixed(1)}% confidence
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('results').classList.add('show');
+        }
+
+        function resetClassifier() {
+            currentImage = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadArea').style.display = 'block';
+            document.getElementById('imagePreview').classList.remove('show');
+            document.getElementById('results').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
